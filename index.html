@@ -90,12 +90,9 @@
           </label>
           <div class="relative">
             <i data-lucide="user-check" class="w-5 h-5 text-rose-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-            <input type="text" id="studentIdInput" required placeholder="กรอกรหัสประจำตัว เช่น 69601" 
+            <input type="text" id="studentIdInput" required placeholder="กรอกรหัสประจำตัวนักเรียน 5 หลัก" 
               class="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-rose-100 focus:border-china-pink focus:ring-4 focus:ring-rose-100 outline-none transition-all text-base bg-rose-50/30">
           </div>
-          <p class="text-xs text-slate-400 mt-1.5">
-            💡 นักเรียนทั่วไป: <button type="button" onclick="fillDemoStudent('18872')" class="text-china-red underline font-medium">18872</button> | รหัสเหรัญญิก (จัดการเงินห้องได้): <button type="button" onclick="fillDemoStudent('18781')" class="text-amber-700 underline font-semibold">18781</button>
-          </p>
         </div>
 
         <button type="submit" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-china-red to-china-pink hover:from-china-darkred hover:to-china-red text-white font-heading font-semibold text-base shadow-lg shadow-rose-200 hover:shadow-xl transition-all flex items-center justify-center gap-2">
@@ -112,12 +109,9 @@
           </label>
           <div class="relative">
             <i data-lucide="key-round" class="w-5 h-5 text-rose-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-            <input type="password" id="adminPassInput" placeholder="กรอกรหัสผ่านครูที่ปรึกษา (ค่าเริ่มต้น: 2569)" 
+            <input type="password" id="adminPassInput" placeholder="กรอกรหัสผ่านครูที่ปรึกษา" 
               class="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-rose-100 focus:border-china-red focus:ring-4 focus:ring-rose-100 outline-none transition-all text-base bg-rose-50/30">
           </div>
-          <p class="text-xs text-slate-400 mt-1.5">
-            🔑 รหัสผ่านครูเริ่มต้นคือ <button type="button" onclick="fillDemoAdmin('2569')" class="text-china-red underline font-medium">2569</button> (ครูสามารถตั้งค่ารหัสนักเรียนที่เป็นเหรัญญิกได้ในเว็บ)
-          </p>
         </div>
 
         <button type="submit" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-china-red hover:opacity-95 text-white font-heading font-semibold text-base shadow-lg shadow-amber-200 transition-all flex items-center justify-center gap-2">
@@ -627,11 +621,8 @@
                 <h3 class="font-heading text-lg sm:text-xl font-bold text-china-darkred flex items-center gap-2">
                   <span>🧧</span> เช็คคนจ่ายเงินห้อง
                 </h3>
-                <span id="treasurerInfoBadge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-medium border border-amber-200">
-                  เหรัญญิก: จีน่า (69603)
-                </span>
               </div>
-              <p class="text-xs text-slate-500 mt-0.5">เหรัญญิกใช้รหัสนักเรียนตัวเองล็อกอินเพื่อคลิกชื่อเล่นติ๊กจ่ายเงินได้เลย (คนอื่นดูได้อย่างเดียว)</p>
+              <p class="text-xs text-slate-500 mt-0.5">ตรวจสอบสถานะการจ่ายเงินห้องในแต่ละงวด</p>
             </div>
             <div class="flex items-center gap-2">
               <button onclick="openSetTreasurerModal()" class="admin-only hidden px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-medium flex items-center gap-1" title="กำหนดรหัสนักเรียนที่เป็นเหรัญญิก">

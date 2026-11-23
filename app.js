@@ -633,7 +633,7 @@ function handleStudentLogin(e) {
   );
 
   if (!found) {
-    showLoginError(`ไม่พบรหัสประจำตัวหรือเลขที่ "${raw}" ในระบบห้องทับหก (ลองใส่ 69601 หรือเลขที่ 1-15)`);
+    showLoginError(`ไม่พบรหัสประจำตัวหรือเลขที่ "${raw}" ในระบบห้องทับหก`);
     return;
   }
 
@@ -648,7 +648,7 @@ function handleAdminLogin(e) {
   const pass = document.getElementById('adminPassInput').value.trim();
   const validPass = appData.adminPass || '2569';
   if (pass !== validPass) {
-    showLoginError('รหัสผ่านครู/เหรัญญิกไม่ถูกต้อง (ค่าเริ่มต้นคือ 2569)');
+    showLoginError('รหัสผ่านครูที่ปรึกษาไม่ถูกต้อง');
     return;
   }
 
@@ -666,7 +666,7 @@ function openQuickAdminPrompt() {
     renderAll();
     return;
   }
-  const pass = prompt('🏮 กรอกรหัสผ่านครูที่ปรึกษา / เหรัญญิก เพื่อเปิดโหมดแก้ไขข้อมูล (ค่าเริ่มต้น: 2569):');
+  const pass = prompt('🏮 กรอกรหัสผ่านครูที่ปรึกษา เพื่อเปิดโหมดแก้ไขข้อมูล:');
   if (pass === null) return;
   if (pass.trim() === (appData.adminPass || '2569')) {
     currentUser = { role: 'admin', student: null };
@@ -1655,16 +1655,6 @@ function renderMoneySection() {
   const moneyAllowed = canManageMoney();
   const myId = currentUser?.student?.id;
   const stats = calculateMoneySummary();
-
-  // Update Treasurer Badge Display
-  const treasurerId = appData.treasurerStudentId || '69603';
-  const treasurerStu = appData.students.find(s => String(s.id) === String(treasurerId));
-  const trBadge = document.getElementById('treasurerInfoBadge');
-  if (trBadge) {
-    trBadge.textContent = treasurerStu
-      ? `🧧 เหรัญญิกที่มีสิทธิ์ติ๊ก: ${treasurerStu.nickname} (รหัส ${treasurerStu.id})`
-      : `🧧 รหัสเหรัญญิก: ${treasurerId}`;
-  }
 
   document.getElementById('moneyTotalIncome').textContent = `฿${stats.totalIncome.toLocaleString()}`;
   document.getElementById('moneyIncomeDetail').textContent = `เก็บเงินห้อง ฿${stats.collectedFromPeriods.toLocaleString()} + รายรับอื่น ฿${stats.extraIncome.toLocaleString()}`;
