@@ -654,11 +654,15 @@
           <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-100 space-y-2">
             <div class="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
               <div class="flex flex-wrap items-center gap-1.5">
-                <span id="activePeriodName" class="font-heading font-bold text-china-darkred">งวดที่ 1</span>
-                <span id="activePeriodAmount" class="px-2 py-0.5 rounded-full bg-white text-china-red text-xs font-semibold border border-rose-200">คนละ 20 บาท</span>
+                <span id="activePeriodName" class="font-heading font-bold text-china-darkred">ครั้งที่ 1</span>
+                <span id="activePeriodAmount" class="px-2 py-0.5 rounded-full bg-white text-china-red text-xs font-semibold border border-rose-200">คนละ 5 บาท</span>
+                <span id="activePeriodModeBadge" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold">งวดที่เรียกเก็บแล้ว</span>
+                <button id="togglePeriodAdvanceBtn" onclick="toggleActivePeriodAdvanceMode()" class="money-manager-only hidden px-2.5 py-0.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-heading font-bold inline-flex items-center gap-1 transition-all shadow-sm">
+                  <span>สลับโหมดเรียกเก็บ</span>
+                </button>
                 <button onclick="openEditPaymentPeriodModal()" class="money-manager-only hidden px-2.5 py-0.5 rounded-lg bg-white hover:bg-rose-100 text-china-red border border-rose-200 text-[11px] font-medium inline-flex items-center gap-1 transition-all" title="แก้ไขชื่อหรือจำนวนเงินของงวดนี้">
                   <i data-lucide="pen-line" class="w-3 h-3"></i>
-                  <span>แก้ไขงวดนี้</span>
+                  <span>แก้ไขชื่อ/ยอด</span>
                 </button>
               </div>
               <div class="flex items-center gap-3">
@@ -744,22 +748,9 @@
           </div>
         </div>
 
-        <!-- Responsive Table -->
-        <div class="overflow-x-auto rounded-2xl border border-rose-100">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-rose-50/80 text-china-darkred text-xs font-heading border-b border-rose-100">
-                <th class="py-3 px-3.5 whitespace-nowrap">เลขที่</th>
-                <th class="py-3 px-3.5 whitespace-nowrap">ชื่อเล่น (ชื่อจริง)</th>
-                <th class="py-3 px-3.5 whitespace-nowrap text-center">จ่ายแล้ว</th>
-                <th class="py-3 px-3.5">งวดที่ค้างชำระ</th>
-                <th class="py-3 px-4 whitespace-nowrap text-right">ต้องจ่ายอีก (บาท)</th>
-              </tr>
-            </thead>
-            <tbody id="studentOwedTableBody" class="divide-y divide-rose-100 text-xs sm:text-sm">
-              <!-- Rendered by JS -->
-            </tbody>
-          </table>
+        <!-- Compact List for Mobile & Table for Desktop -->
+        <div id="studentOwedListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          <!-- Rendered by JS -->
         </div>
       </div>
     </section>

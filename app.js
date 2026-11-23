@@ -527,10 +527,28 @@ async function pullFromGoogleSheets(silent = false) {
         return merged;
       });
 
+      // เก็บรักษาค่า isAdvance ของงวดเก็บเงิน (เช่น ครั้งที่ 9-12 เป็นงวดจ่ายล่วงหน้า ไม่คิดค้างจ่าย) ไม่ให้ถูกล้างตอนดึงจาก Sheet
+      const localPeriodsMap = {};
+      (appData.paymentPeriods || []).forEach(p => {
+        localPeriodsMap[p.id] = p;
+        localPeriodsMap[p.name] = p;
+      });
+      const mergedPeriods = (json.payload.paymentPeriods || appData.paymentPeriods || []).map((rp, idx) => {
+        const lp = localPeriodsMap[rp.id] || localPeriodsMap[rp.name];
+        const isAdv = (rp.isAdvance !== undefined)
+          ? Boolean(rp.isAdvance)
+          : (lp && lp.isAdvance !== undefined ? Boolean(lp.isAdvance) : (idx >= 8));
+        return {
+          ...rp,
+          isAdvance: isAdv
+        };
+      });
+
       appData = {
         ...INITIAL_DATA,
         ...json.payload,
         students: mergedStudents,
+        paymentPeriods: mergedPeriods,
         calendarEvents: (Array.isArray(json.payload.calendarEvents) && json.payload.calendarEvents.length > 0)
           ? json.payload.calendarEvents
           : (appData.calendarEvents || INITIAL_DATA.calendarEvents),
@@ -858,7 +876,7 @@ function renderDashboard() {
   const visitPct = Math.round((visitedCount / totalStudents) * 100);
 
   // Expected total fund from active periods
-  const activePeriods = (appData.paymentPeriods || []).filter(p => !p.isAdvance);
+  const activePeriods = (appData.paymentPeriods || []).filter((p, idx) => !((p.isAdvance !== undefined) ? Boolean(p.isAdvance) : (idx >= 8)));
   const expectedPerStu = activePeriods.reduce((sum, p) => sum + Number(p.amountPerStudent || 0), 0);
   const totalExpectedFund = Math.max(1, expectedPerStu * totalStudents);
   const moneyPct = Math.min(100, Math.round((moneyStats.collectedFromPeriods / totalExpectedFund) * 100));
@@ -892,7 +910,10 @@ function renderDashboard() {
     document.getElementById('dashPersonalSummary').textContent = `เข้าสู่ระบบด้วยรหัส ${stu.id} แล้ว คลิกปุ่มด้านล่างเพื่อเข้าเว็บโครงงานคุณธรรมได้ทันทีโดยไม่ต้องล็อกอินซ้ำ`;
 
     // Check personal unpaid periods (only non-advance active periods)
-    const unpaidPeriods = appData.paymentPeriods.filter(p => !p.isAdvance && !p.paidStudentIds.includes(stu.id));
+    const unpaidPeriods = appData.paymentPeriods.filter((p, idx) => {
+      const isAdv = (p.isAdvance !== undefined) ? Boolean(p.isAdvance) : (idx >= 8);
+      return !isAdv && !p.paidStudentIds.includes(stu.id);
+    });
     const moneyStatusEl = document.getElementById('myMoneyStatusText');
     if (unpaidPeriods.length === 0) {
       moneyStatusEl.textContent = 'จ่ายครบทุกงวด ✨';
@@ -1776,9 +1797,9 @@ function renderMoneySection() {
 }
 
 function renderStudentOwedTable() {
-  const tbody = document.getElementById('studentOwedTableBody');
+  const container = document.getElementById('studentOwedListContainer');
   const badge = document.getElementById('totalUnpaidSummaryBadge');
-  if (!tbody) return;
+  if (!container) return;
 
   const moneyAllowed = canManageMoney();
   const myId = currentUser?.student?.id;
@@ -1794,12 +1815,13 @@ function renderStudentOwedTable() {
     const unpaidPeriods = [];
     const paidPeriods = [];
 
-    periods.forEach(p => {
+    periods.forEach((p, idx) => {
       const amt = Number(p.amountPerStudent || 0);
+      const isAdv = (p.isAdvance !== undefined) ? Boolean(p.isAdvance) : (idx >= 8);
       if ((p.paidStudentIds || []).includes(stu.id)) {
         paidAmt += amt;
         paidPeriods.push(p);
-      } else if (!p.isAdvance) {
+      } else if (!isAdv) {
         // นับยอดค้างเฉพาะงวดที่ถึงกำหนดเรียกเก็บแล้ว (ไม่นับงวดจ่ายล่วงหน้า 9-12)
         owedAmt += amt;
         unpaidPeriods.push(p);
@@ -1832,65 +1854,72 @@ function renderStudentOwedTable() {
   const displayRows = rowsData.filter(r => owedTableFilter === 'all' ? true : r.owedAmt > 0);
 
   if (displayRows.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" class="py-8 text-center text-slate-400 text-xs sm:text-sm">
-          🎉 ไม่มีคนค้างจ่ายเงินห้องเลย! ทุกคนจ่ายครบหมดแล้ว
-        </td>
-      </tr>
+    container.innerHTML = `
+      <div class="col-span-full py-8 px-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 text-center text-emerald-700 font-heading font-semibold text-xs sm:text-sm">
+        🎉 ไม่มีคนค้างจ่ายเงินห้องในงวดปัจจุบันเลย! ทุกคนจ่ายครบหมดแล้ว
+      </div>
     `;
     return;
   }
 
-  tbody.innerHTML = displayRows.map(row => {
+  container.innerHTML = displayRows.map(row => {
     const { stu, paidAmt, owedAmt, unpaidPeriods } = row;
     const isMe = myId === stu.id;
 
     const unpaidPills = unpaidPeriods.length === 0
-      ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">✓ จ่ายครบทุกงวด</span>`
+      ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-semibold">✓ จ่ายครบทุกงวด</span>`
       : unpaidPeriods.map(p => `
           <button type="button"
             onclick="${moneyAllowed ? `toggleStudentPayment('${p.id}', '${stu.id}')` : ''}"
             title="${moneyAllowed ? 'คลิกเพื่อติ๊กว่าจ่ายงวดนี้แล้ว' : p.name}"
-            class="${moneyAllowed ? 'cursor-pointer hover:bg-china-red hover:text-white' : 'cursor-default'} inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-100 text-china-darkred text-xs font-medium border border-rose-200 transition-all mr-1.5 mb-1">
-            <span>⏳ ${p.name} (฿${p.amountPerStudent})</span>
+            class="${moneyAllowed ? 'cursor-pointer hover:bg-china-red hover:text-white active:scale-95' : 'cursor-default'} inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-100 text-china-darkred text-[11px] font-medium border border-rose-200 transition-all whitespace-nowrap">
+            <span>⏳ ${p.name}</span>
           </button>
         `).join('');
 
     return `
-      <tr class="${isMe ? 'bg-rose-50/90 font-medium' : 'hover:bg-rose-50/40'} transition-colors">
-        <td class="py-3 px-3.5 whitespace-nowrap">
-          <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-rose-100 text-china-darkred font-heading font-bold text-xs">
-            ${stu.no}
-          </span>
-        </td>
-        <td class="py-3 px-3.5 whitespace-nowrap">
-          <div class="flex items-center gap-2">
-            <span class="text-lg">${stu.emoji || '🐼'}</span>
-            <div>
-              <p class="font-heading font-bold text-slate-800 text-xs sm:text-sm">${stu.nickname || stu.name}</p>
-              <p class="text-[11px] text-slate-400">${stu.name}</p>
+      <div class="p-3 sm:p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2 ${
+        isMe
+          ? 'bg-rose-50/90 border-china-red ring-1 ring-china-red'
+          : owedAmt > 0
+            ? 'bg-rose-50/30 border-rose-100 hover:border-rose-200'
+            : 'bg-emerald-50/20 border-emerald-100'
+      }">
+        <!-- Top Row: Student Number + Nickname + Paid vs Owed Badge -->
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-china-red text-white font-heading font-bold text-xs shrink-0">
+              ${stu.no}
+            </span>
+            <span class="text-base shrink-0">${stu.emoji || '🐼'}</span>
+            <div class="min-w-0 truncate">
+              <span class="font-heading font-bold text-slate-800 text-sm">${stu.nickname || stu.name}</span>
+              <span class="text-[11px] text-slate-400 ml-1">(${stu.name})</span>
             </div>
           </div>
-        </td>
-        <td class="py-3 px-3.5 whitespace-nowrap text-center">
-          <span class="font-heading font-semibold text-emerald-600">฿${paidAmt.toLocaleString()}</span>
-        </td>
-        <td class="py-3 px-3.5">
-          <div class="flex flex-wrap items-center">
-            ${unpaidPills}
-          </div>
-        </td>
-        <td class="py-3 px-4 whitespace-nowrap text-right">
-          ${owedAmt > 0 ? `
-            <span class="inline-block px-3 py-1 rounded-xl bg-china-red text-white font-heading font-bold text-xs sm:text-sm shadow-sm">
-              ต้องจ่ายอีก ฿${owedAmt.toLocaleString()}
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 whitespace-nowrap">
+              จ่ายแล้ว ฿${paidAmt.toLocaleString()}
             </span>
-          ` : `
-            <span class="text-xs font-heading font-bold text-emerald-600">฿0 (ครบ)</span>
-          `}
-        </td>
-      </tr>
+            ${owedAmt > 0 ? `
+              <span class="px-2.5 py-1 rounded-xl bg-china-red text-white font-heading font-bold text-xs shadow-sm whitespace-nowrap">
+                ค้าง ฿${owedAmt.toLocaleString()}
+              </span>
+            ` : `
+              <span class="px-2 py-0.5 rounded-lg bg-emerald-500 text-white font-heading font-bold text-[11px] whitespace-nowrap">
+                ครบ ✓
+              </span>
+            `}
+          </div>
+        </div>
+
+        <!-- Bottom Row: Compact Horizontal Pills of Unpaid Periods -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-rose-100/70">
+          <span class="text-[11px] text-slate-400 mr-0.5">${unpaidPeriods.length > 0 ? 'งวดที่ค้าง:' : 'สถานะ:'}</span>
+          ${unpaidPills}
+        </div>
+      </div>
     `;
   }).join('');
 }
@@ -1916,8 +1945,9 @@ function copyUnpaidListToClipboard() {
   appData.students.forEach(stu => {
     let owedAmt = 0;
     const unpaidNames = [];
-    periods.forEach(p => {
-      if (!p.isAdvance && !(p.paidStudentIds || []).includes(stu.id)) {
+    periods.forEach((p, idx) => {
+      const isAdv = (p.isAdvance !== undefined) ? Boolean(p.isAdvance) : (idx >= 8);
+      if (!isAdv && !(p.paidStudentIds || []).includes(stu.id)) {
         owedAmt += Number(p.amountPerStudent || 0);
         unpaidNames.push(p.name);
       }
