@@ -1,0 +1,171 @@
+/* ==========================================================
+   Homeroom ทับหก (2569-2571) - Cute Chinese Bright Theme
+   Red / Pink / White / Gold Accent Styles
+   ========================================================== */
+
+:root {
+  --china-red: #E11D48;
+  --china-darkred: #BE123C;
+  --china-pink: #FB7185;
+  --china-softpink: #FFE4E6;
+  --china-cream: #FFFBFB;
+  --china-gold: #F59E0B;
+}
+
+/* Soft Chinese Lattice / Plum Blossom Subtle Background */
+.chinese-pattern {
+  background-color: #FFFBFB;
+  background-image: 
+    radial-gradient(#FDA4AF 0.75px, transparent 0.75px), 
+    radial-gradient(#FECDD3 0.75px, #FFFBFB 0.75px);
+  background-size: 32px 32px;
+  background-position: 0 0, 16px 16px;
+}
+
+/* Auspicious Chinese Lantern Badge */
+.lantern-badge {
+  width: 38px;
+  height: 42px;
+  background: linear-gradient(135deg, #E11D48, #FB7185);
+  color: #FEF3C7;
+  font-family: 'Noto Serif SC', serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border-radius: 14px 14px 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #FDE68A;
+  box-shadow: 0 6px 14px -3px rgba(225, 29, 72, 0.35);
+  position: relative;
+}
+
+.lantern-badge::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  width: 10px;
+  height: 6px;
+  background: #F59E0B;
+  border-radius: 0 0 4px 4px;
+}
+
+/* Chinese Corner Frame Accent */
+.chinese-corner-box {
+  position: relative;
+}
+
+.chinese-corner-box::before,
+.chinese-corner-box::after {
+  content: '❖';
+  position: absolute;
+  color: #FDA4AF;
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.chinese-corner-box::before {
+  top: 10px;
+  right: 14px;
+}
+
+.chinese-corner-box::after {
+  bottom: 10px;
+  left: 14px;
+}
+
+/* Navigation Tab Pills */
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.05rem;
+  border-radius: 1rem;
+  font-family: 'Mali', cursive, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748B;
+  background: transparent;
+  border: 1.5px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-tab:hover {
+  color: #E11D48;
+  background: #FFF1F2;
+  border-color: #FECDD3;
+}
+
+.nav-tab.active {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #E11D48, #FB7185);
+  border-color: #FDA4AF;
+  box-shadow: 0 4px 12px -2px rgba(225, 29, 72, 0.3);
+}
+
+/* Hide Scrollbars on Nav */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom Cute Scrollbar for Lists */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF1F2;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb {
+  background: #FDA4AF;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FB7185;
+}
+
+/* Number Randomizer Pulse Animation */
+@keyframes luckyPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.lucky-spinning {
+  animation: luckyPulse 0.25s infinite ease-in-out;
+}
+
+/* MedBoard-inspired Vertical Side Tab Text */
+.writing-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+/* Mobile & iPad Bottom Navigation Active Pill */
+.mob-nav-btn.active {
+  color: #E11D48;
+  background-color: #FFF1F2;
+}
+
+/* Responsive adjustments for iPad & Mobile screens */
+@media (max-width: 1023px) {
+  body {
+    padding-bottom: 64px;
+  }
+}
+
+@media (max-width: 640px) {
+  .nav-tab {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.78rem;
+  }
+}
+
+
