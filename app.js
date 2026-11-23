@@ -527,17 +527,24 @@ async function pullFromGoogleSheets(silent = false) {
         return merged;
       });
 
-      // เก็บรักษาค่า isAdvance ของงวดเก็บเงิน (เช่น ครั้งที่ 9-12 เป็นงวดจ่ายล่วงหน้า ไม่คิดค้างจ่าย) ไม่ให้ถูกล้างตอนดึงจาก Sheet
+      // เก็บรักษาค่า isAdvance ของงวดเก็บเงิน (เช่น ครั้งที่ 9-12 เป็นงวดจ่ายล่วงหน้า หรือเมื่อครูเปิดเริ่มคิดเงินครั้งที่ 9 แล้วก็ไม่ให้ถูกล้างตอนรีเฟรช)
       const localPeriodsMap = {};
       (appData.paymentPeriods || []).forEach(p => {
         localPeriodsMap[p.id] = p;
         localPeriodsMap[p.name] = p;
       });
+      let localPeriodModeChanged = false;
       const mergedPeriods = (json.payload.paymentPeriods || appData.paymentPeriods || []).map((rp, idx) => {
         const lp = localPeriodsMap[rp.id] || localPeriodsMap[rp.name];
-        const isAdv = (rp.isAdvance !== undefined)
-          ? Boolean(rp.isAdvance)
-          : (lp && lp.isAdvance !== undefined ? Boolean(lp.isAdvance) : (idx >= 8));
+        let isAdv;
+        if (lp && lp.isAdvance !== undefined) {
+          isAdv = Boolean(lp.isAdvance);
+          if (rp.isAdvance !== isAdv) localPeriodModeChanged = true;
+        } else if (rp.isAdvance !== undefined) {
+          isAdv = Boolean(rp.isAdvance);
+        } else {
+          isAdv = (idx >= 8);
+        }
         return {
           ...rp,
           isAdvance: isAdv
@@ -556,7 +563,7 @@ async function pullFromGoogleSheets(silent = false) {
         images: { ...INITIAL_DATA.images, ...(appData.images || {}), ...(json.payload.images || {}) }
       };
       ensureUniqueStudentAnimals(appData.students);
-      saveAppData(!localHasNewerHomeVisit);
+      saveAppData(!(localHasNewerHomeVisit || localPeriodModeChanged));
       updateSyncStatusUI('ok', 'ซิงค์ข้อมูลเรียบร้อย');
       if (!silent) alert(`ดึงข้อมูลล่าสุดและผสานข้อมูลการเยี่ยมบ้านสำเร็จ! (นักเรียน ${appData.students.length} คน) 🌸`);
     } else {
@@ -1671,16 +1678,20 @@ function renderMoneySection() {
 
   // Period Selector Tabs
   const periodTabs = document.getElementById('paymentPeriodTabs');
-  periodTabs.innerHTML = appData.paymentPeriods.map(p => {
+  periodTabs.innerHTML = appData.paymentPeriods.map((p, idx) => {
     const active = p.id === activePeriodId;
+    const isAdv = (p.isAdvance !== undefined) ? Boolean(p.isAdvance) : (idx >= 8);
     return `
-      <div class="inline-flex items-center bg-rose-50/70 rounded-xl p-0.5 border border-rose-100">
-        <button onclick="selectPaymentPeriod('${p.id}')" class="px-3 py-1.5 rounded-lg text-xs font-heading font-semibold transition-all ${
+      <div class="inline-flex items-center bg-rose-50/70 rounded-xl p-0.5 border ${isAdv ? 'border-dashed border-amber-300' : 'border-rose-100'}">
+        <button onclick="selectPaymentPeriod('${p.id}')" class="px-3 py-1.5 rounded-lg text-xs font-heading font-semibold transition-all flex items-center gap-1 ${
           active
             ? 'bg-china-red text-white shadow-sm'
-            : 'text-china-darkred hover:bg-rose-100'
+            : isAdv
+              ? 'text-amber-700 hover:bg-amber-50'
+              : 'text-china-darkred hover:bg-rose-100'
         }">
-          ${p.name} (฿${p.amountPerStudent})
+          <span>${p.name} (฿${p.amountPerStudent})</span>
+          ${isAdv ? `<span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800">ล่วงหน้า</span>` : ''}
         </button>
         ${moneyAllowed ? `
           <button onclick="openEditPaymentPeriodModal('${p.id}')" class="ml-0.5 p-1 text-slate-400 hover:text-china-red" title="แก้ไขชื่องวด/จำนวนเงิน">
@@ -1696,18 +1707,41 @@ function renderMoneySection() {
     `;
   }).join('');
 
-  const activePeriod = appData.paymentPeriods.find(p => p.id === activePeriodId);
+  const activeIdx = appData.paymentPeriods.findIndex(p => p.id === activePeriodId);
+  const activePeriod = activeIdx >= 0 ? appData.paymentPeriods[activeIdx] : null;
   if (activePeriod) {
     const paidCount = activePeriod.paidStudentIds.length;
     const totalCount = appData.students.length;
     const collectedBath = paidCount * Number(activePeriod.amountPerStudent || 0);
     const pct = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0;
+    const isAdv = (activePeriod.isAdvance !== undefined) ? Boolean(activePeriod.isAdvance) : (activeIdx >= 8);
 
     document.getElementById('activePeriodName').textContent = activePeriod.name;
     document.getElementById('activePeriodAmount').textContent = `คนละ ${activePeriod.amountPerStudent} บาท`;
     document.getElementById('activePeriodStats').textContent = `จ่ายแล้ว ${paidCount}/${totalCount} คน (฿${collectedBath.toLocaleString()})`;
     document.getElementById('activePeriodBar').style.width = `${pct}%`;
     document.getElementById('moneyPaidRatioText').textContent = `${activePeriod.name}: จ่ายแล้ว ${paidCount}/${totalCount} คน`;
+
+    const modeBadge = document.getElementById('activePeriodModeBadge');
+    const toggleAdvBtn = document.getElementById('togglePeriodAdvanceBtn');
+    if (modeBadge) {
+      if (isAdv) {
+        modeBadge.textContent = '⏳ งวดล่วงหน้า (ยังไม่คิดค้างจ่าย)';
+        modeBadge.className = 'px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200';
+      } else {
+        modeBadge.textContent = '✓ เริ่มคิดเงินงวดนี้แล้ว';
+        modeBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold border border-emerald-200';
+      }
+    }
+    if (toggleAdvBtn) {
+      if (isAdv) {
+        toggleAdvBtn.innerHTML = `<span>🔔 กดเพื่อเริ่มคิดเงินงวดนี้</span>`;
+        toggleAdvBtn.className = `${moneyAllowed ? '' : 'hidden'} money-manager-only px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-heading font-bold inline-flex items-center gap-1 transition-all shadow-sm`;
+      } else {
+        toggleAdvBtn.innerHTML = `<span>⏸️ ตั้งเป็นงวดล่วงหน้า (ยังไม่คิดค้าง)</span>`;
+        toggleAdvBtn.className = `${moneyAllowed ? '' : 'hidden'} money-manager-only px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-heading font-bold inline-flex items-center gap-1 transition-all shadow-sm`;
+      }
+    }
 
     // Filter Student List
     const filteredStudents = appData.students.filter(stu => {
@@ -1978,6 +2012,16 @@ function selectPaymentPeriod(periodId) {
   activePeriodId = periodId;
   renderMoneySection();
   if (window.lucide) lucide.createIcons();
+}
+
+function toggleActivePeriodAdvanceMode() {
+  if (!canManageMoney()) return;
+  const idx = appData.paymentPeriods.findIndex(p => p.id === activePeriodId);
+  if (idx < 0) return;
+  const period = appData.paymentPeriods[idx];
+  const curAdv = (period.isAdvance !== undefined) ? Boolean(period.isAdvance) : (idx >= 8);
+  period.isAdvance = !curAdv;
+  saveAppData();
 }
 
 function setPaymentFilter(filter) {
